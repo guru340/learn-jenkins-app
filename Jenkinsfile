@@ -4,10 +4,11 @@ pipeline {
     environment {
         NETLIFY_SITE_ID = '195409a8-4b5a-4877-b672-a89b9de38cc1'
         NETLIFY_AUTH_TOKEN = credentials('netlfy-token')
+       
     }
 
     stages {
-        /*
+        
 
         stage('Build') {
             agent {
@@ -27,7 +28,7 @@ pipeline {
                 '''
             }
         }
-*/
+
         stage('Tests') {
             parallel {
                 stage('Unit tests') {
@@ -91,5 +92,33 @@ pipeline {
                 '''
             }
         }
+
+        stage(' Prod E2E') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                            reuseNode true
+                        }
+                    }
+                        environment {
+                                NETLIFY_SITE_ID = '195409a8-4b5a-4877-b672-a89b9de38cc1'
+                                NETLIFY_AUTH_TOKEN = credentials('netlfy-token')
+                                CI_ENVIRONMENT_URL='https://unrivaled-profiterole-12edf0.netlify.app/'
+        }
+
+
+                    steps {
+                        sh '''
+                            
+                            npx playwright test  --reporter=html
+                        '''
+                    }
+
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E', reportTitles: '', useWrapperFileDirectly: true])
+                        }
+                    }
+                }
     }
 }
