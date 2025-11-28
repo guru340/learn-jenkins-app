@@ -78,7 +78,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy staging') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -88,7 +88,23 @@ pipeline {
             steps {
                 sh '''
                     npm install netlify-cli
+                    netlify --version
                     
+                '''
+            }
+        }
+
+        stage('Deploy Prod') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    netlify --version
                 '''
             }
         }
@@ -101,8 +117,7 @@ pipeline {
                         }
                     }
                         environment {
-                                NETLIFY_SITE_ID = '195409a8-4b5a-4877-b672-a89b9de38cc1'
-                                NETLIFY_AUTH_TOKEN = credentials('netlfy-token')
+                               
                                 CI_ENVIRONMENT_URL='https://unrivaled-profiterole-12edf0.netlify.app/'
         }
 
