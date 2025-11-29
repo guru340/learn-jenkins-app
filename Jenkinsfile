@@ -11,42 +11,35 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'node:18-bullseye'   // FIX: alpine → bullseye
+                     image 'node:18-bullseye' '
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    apt-get update
-                    apt-get install -y bash   # FIX for ENOENT bash error
-
                     ls -la
                     node --version
                     npm --version
-
                     npm ci
                     npm run build
-
-                    ls -la build
+                    ls -la
                 '''
             }
         }
 
         stage('Tests') {
             parallel {
-
                 stage('Unit tests') {
                     agent {
                         docker {
-                            image 'node:18-bullseye'   // FIX: alpine → bullseye
+                            image 'node:18-bullseye' 
                             reuseNode true
                         }
                     }
+
                     steps {
                         sh '''
-                            apt-get update
-                            apt-get install -y bash
-
+                            #test -f build/index.html
                             npm test
                         '''
                     }
@@ -64,23 +57,19 @@ pipeline {
                             reuseNode true
                         }
                     }
+
                     steps {
                         sh '''
                             npm install serve
-
                             node_modules/.bin/serve -s build &
                             sleep 10
-
-                            npx playwright test --reporter=html
+                            npx playwright test  --reporter=html
                         '''
                     }
+
                     post {
                         always {
-                            publishHTML([
-                                reportDir: 'playwright-report',
-                                reportFiles: 'index.html',
-                                reportName: 'Playwright Local'
-                            ])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local', reportTitles: '', useWrapperFileDirectly: true])
                         }
                     }
                 }
@@ -90,21 +79,19 @@ pipeline {
         stage('Deploy staging') {
             agent {
                 docker {
-                    image 'node:18-bullseye'   // FIX
+                    image 'node:18-bullseye' 
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    apt-get update
+                     apt-get update
                     apt-get install -y bash
-
                     npm install netlify-cli
-
-                    echo "Deploying to staging..."
                     node_modules/.bin/netlify --version
+                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --site=$NETLIFY_SITE_ID
+                    node_modules/.bin/netlify deploy --dir=build
                 '''
             }
         }
@@ -112,7 +99,7 @@ pipeline {
         stage('Deploy prod') {
             agent {
                 docker {
-                    image 'node:18-bullseye'   // FIX
+                     image 'node:18-bullseye'
                     reuseNode true
                 }
             }
@@ -120,12 +107,11 @@ pipeline {
                 sh '''
                     apt-get update
                     apt-get install -y bash
-
                     npm install netlify-cli
-
-                    echo "Deploying to production..."
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod --site=$NETLIFY_SITE_ID
+                    node_modules/.bin/netlify deploy --dir=build --prod
                 '''
             }
         }
@@ -144,17 +130,13 @@ pipeline {
 
             steps {
                 sh '''
-                    npx playwright test --reporter=html
+                    npx playwright test  --reporter=html
                 '''
             }
 
             post {
                 always {
-                    publishHTML([
-                        reportDir: 'playwright-report',
-                        reportFiles: 'index.html',
-                        reportName: 'Playwright E2E'
-                    ])
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
