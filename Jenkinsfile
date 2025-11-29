@@ -11,12 +11,14 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                     image 'node:18-bullseye' '
+                    image 'node:18-bullseye'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
+                  apt-get update
+                    apt-get install -y bash  
                     ls -la
                     node --version
                     npm --version
@@ -32,7 +34,7 @@ pipeline {
                 stage('Unit tests') {
                     agent {
                         docker {
-                            image 'node:18-bullseye' 
+                            image 'node:18-bullseye'
                             reuseNode true
                         }
                     }
@@ -79,13 +81,13 @@ pipeline {
         stage('Deploy staging') {
             agent {
                 docker {
-                    image 'node:18-bullseye' 
+                    image 'node:18-bullseye'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                     apt-get update
+                    apt-get update
                     apt-get install -y bash
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
@@ -99,7 +101,7 @@ pipeline {
         stage('Deploy prod') {
             agent {
                 docker {
-                     image 'node:18-bullseye'
+                    image 'node:18-bullseye'
                     reuseNode true
                 }
             }
