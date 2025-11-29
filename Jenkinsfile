@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_SITE_ID = '195409a8-4b5a-4877-b672-a89b9de38cc1'
-        NETLIFY_AUTH_TOKEN = credentials('netlfy-token')
+                NETLIFY_SITE_ID = '195409a8-4b5a-4877-b672-a89b9de38cc1'
+		NETLIFY_AUTH_TOKEN = credentials('netlfy-token')
     }
 
     stages {
@@ -11,14 +11,12 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'node:18-bullseye'
+                    image 'node:18-alpine'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                  apt-get update
-                    apt-get install -y bash  
                     ls -la
                     node --version
                     npm --version
@@ -34,7 +32,7 @@ pipeline {
                 stage('Unit tests') {
                     agent {
                         docker {
-                            image 'node:18-bullseye'
+                            image 'node:18-alpine'
                             reuseNode true
                         }
                     }
@@ -81,34 +79,39 @@ pipeline {
         stage('Deploy staging') {
             agent {
                 docker {
-                    image 'node:18-bullseye'
+                    image 'node:18-alpine'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    apt-get update
-                    apt-get install -y bash
-                    npm install netlify-cli
+                    npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build
+                    node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
+                    node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json
                 '''
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                timeout(time: 15, unit: 'MINUTES') {
+                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+                }
             }
         }
 
         stage('Deploy prod') {
             agent {
                 docker {
-                    image 'node:18-bullseye'
+                    image 'node:18-alpine'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    apt-get update
-                    apt-get install -y bash
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
